@@ -30,12 +30,16 @@
 - (void)setupSaveNotification
 {
     [[NSNotificationCenter defaultCenter] addObserverForName:NSManagedObjectContextDidSaveNotification
-                                                          object:nil
-                                                           queue:[NSOperationQueue mainQueue]
-                                                      usingBlock:^(NSNotification* note)
-        {
-            [self.mainManagedObjectContext mergeChangesFromContextDidSaveNotification:note];
-        }];
+                                                      object:nil
+                                                       queue:nil
+                                                  usingBlock:^(NSNotification* note) {
+                                                      NSManagedObjectContext *moc = self.mainManagedObjectContext;
+                                                      if (note.object != moc) {
+                                                          [moc performBlock:^(){
+                                                              [moc mergeChangesFromContextDidSaveNotification:note];
+                                                          }];
+                                                      }
+                                                  }];
 }
 
 
@@ -61,7 +65,7 @@
         return _mainManagedObjectContext;
     }
 
-    _mainManagedObjectContext = [[NSManagedObjectContext alloc] init];
+    _mainManagedObjectContext = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSMainQueueConcurrencyType];
     _mainManagedObjectContext.persistentStoreCoordinator = [self persistentStoreCoordinator];
     return _mainManagedObjectContext;
 }
